@@ -3,7 +3,7 @@ import { Play, Pause, RotateCcw } from "lucide-react";
 
 type Scenario = "receptor" | "defensa";
 const DUR = 4.2;
-const lerp = (a: number, b: number, t: number) => a + (b - a) * Math.min(1, Math.max(0, t));
+const lerp = (a0: number | undefined, b0: number | undefined, t: number) => { const a = a0 ?? 0, b = b0 ?? 0; return a + (b - a) * Math.min(1, Math.max(0, t)); };
 
 // Rutas: puntos [t, x, y] en yardas (campo 0-60 x, 0-53 y)
 const routes = {
@@ -18,12 +18,12 @@ const routes = {
     [[0, 19, 30], [1.6, 25, 30], [3.2, 28, 31]],
   ],
 } as const;
-const at = (pts: readonly (readonly number[])[], t: number) => {
-  for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) {
-    const k = (t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]);
-    return [lerp(pts[i - 1][1], pts[i][1], k), lerp(pts[i - 1][2], pts[i][2], k)];
+const at = (pts: readonly (readonly number[])[], t: number): [number, number] => {
+  for (let i = 1; i < pts.length; i++) {
+    const p = pts[i - 1]!, q = pts[i]!;
+    if (t <= q[0]!) { const k = (t - p[0]!) / (q[0]! - p[0]!); return [lerp(p[1], q[1], k), lerp(p[2], q[2], k)]; }
   }
-  const l = pts[pts.length - 1]; return [l[1], l[2]];
+  const l = pts[pts.length - 1]!; return [l[1]!, l[2]!];
 };
 
 export function PlayField() {
@@ -47,8 +47,8 @@ export function PlayField() {
   const recs = routes[sc].map((p) => at(p, Math.min(t, 3.2)));
   const dbs = recs.map(([x, y], i) => [x + (sc === "defensa" ? 1 : t > 1.5 && i === 0 ? 3.5 : 2.2), y + (i === 0 && sc === "receptor" && t > 1.5 ? -3.5 : 0.8)]);
   const throwT = sc === "receptor" ? 2.4 : 99;
-  const ball = t > throwT ? (() => { const k = Math.min(1, (t - throwT) / 0.8); const tgt = recs[0]; return [lerp(qb[0], tgt[0], k), lerp(qb[1], tgt[1], k) - Math.sin(k * Math.PI) * 4]; })() : qb;
-  const X = (v: number) => v * 10, Y = (v: number) => v * 10;
+  const ball = t > throwT ? (() => { const k = Math.min(1, (t - throwT) / 0.8); const tgt = recs[0]!; return [lerp(qb[0], tgt[0], k), lerp(qb[1], tgt[1], k) - Math.sin(k * Math.PI) * 4]; })() : qb;
+  const X = (v?: number) => (v ?? 0) * 10, Y = (v?: number) => (v ?? 0) * 10;
   const clock = (lim: number) => Math.min(t, lim).toFixed(1);
 
   return (
@@ -76,9 +76,9 @@ export function PlayField() {
           <circle cx={X(qb[0])} cy={Y(qb[1])} r={20} className="fill-none stroke-destructive" strokeWidth={2} opacity={rushK} strokeDasharray="4 3" />
           {routes[sc].map((p, i) => <polyline key={i} points={p.map((q) => `${X(q[1])},${Y(q[2])}`).join(" ")} className="fill-none stroke-foreground/30" strokeWidth={2} strokeDasharray="5 5" />)}
           {recs.map(([x, y], i) => {
-            const d = Math.hypot(x - dbs[i][0], y - dbs[i][1]); const free = d >= 3;
+            const d = Math.hypot(x - dbs[i]![0], y - dbs[i]![1]); const free = d >= 3;
             return <g key={i}>
-              <line x1={X(x)} y1={Y(y)} x2={X(dbs[i][0])} y2={Y(dbs[i][1])} className={free ? "stroke-accent" : "stroke-destructive"} strokeWidth={1.5} />
+              <line x1={X(x)} y1={Y(y)} x2={X(dbs[i]![0])} y2={Y(dbs[i]![1])} className={free ? "stroke-accent" : "stroke-destructive"} strokeWidth={1.5} />
               <circle cx={X(x)} cy={Y(y)} r={11} className={free ? "fill-accent" : "fill-chart-5"} />
               <text x={X(x)} y={Y(y) - 16} textAnchor="middle" className="fill-foreground font-mono text-[11px]">{d.toFixed(1)}yd</text>
             </g>;
