@@ -76,7 +76,7 @@ export function PlayField() {
           <circle cx={X(qb[0])} cy={Y(qb[1])} r={20} className="fill-none stroke-destructive" strokeWidth={2} opacity={rushK} strokeDasharray="4 3" />
           {routes[sc].map((p, i) => <polyline key={i} points={p.map((q) => `${X(q[1])},${Y(q[2])}`).join(" ")} className="fill-none stroke-foreground/30" strokeWidth={2} strokeDasharray="5 5" />)}
           {recs.map(([x, y], i) => {
-            const d = Math.hypot(x - dbs[i]![0], y - dbs[i]![1]); const free = d >= 3;
+            const d = Math.hypot(x - (dbs[i]![0] ?? 0), y - (dbs[i]![1] ?? 0)); const free = d >= 3;
             return <g key={i}>
               <line x1={X(x)} y1={Y(y)} x2={X(dbs[i]![0])} y2={Y(dbs[i]![1])} className={free ? "stroke-accent" : "stroke-destructive"} strokeWidth={1.5} />
               <circle cx={X(x)} cy={Y(y)} r={11} className={free ? "fill-accent" : "fill-chart-5"} />
