@@ -74,40 +74,40 @@
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(0.17 0.012 260);
+  --background: oklch(0.16 0.008 240);
   --foreground: oklch(0.95 0.005 260);
-  --card: oklch(0.215 0.014 260);
+  --card: oklch(0.215 0.012 240 / 0.72);
   --card-foreground: oklch(0.95 0.005 260);
   --popover: oklch(0.23 0.014 260);
   --popover-foreground: oklch(0.95 0.005 260);
-  --primary: oklch(0.7 0.19 45);
+  --primary: oklch(0.77 0.14 220);
   --primary-foreground: oklch(0.15 0.01 260);
   --secondary: oklch(0.26 0.015 260);
   --secondary-foreground: oklch(0.95 0.005 260);
   --muted: oklch(0.25 0.014 260);
-  --muted-foreground: oklch(0.66 0.015 260);
+  --muted-foreground: oklch(0.73 0.015 240);
   --accent: oklch(0.72 0.15 160);
   --accent-foreground: oklch(0.15 0.01 260);
   --destructive: oklch(0.64 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.3 0.015 260);
   --input: oklch(0.3 0.015 260);
-  --ring: oklch(0.7 0.19 45);
-  --field: oklch(0.36 0.08 150);
-  --field-line: oklch(0.85 0.02 150 / 0.5);
-  --chart-1: oklch(0.7 0.19 45);
+  --ring: oklch(0.77 0.14 220);
+  --field: oklch(0.20 0.026 220);
+  --field-line: oklch(0.7 0.06 220 / 0.24);
+  --chart-1: oklch(0.77 0.14 220);
   --chart-2: oklch(0.72 0.15 160);
   --chart-3: oklch(0.64 0.22 25);
   --chart-4: oklch(0.8 0.15 90);
   --chart-5: oklch(0.65 0.12 240);
-  --sidebar: oklch(0.2 0.013 260);
+  --sidebar: oklch(0.19 0.008 240);
   --sidebar-foreground: oklch(0.9 0.005 260);
-  --sidebar-primary: oklch(0.7 0.19 45);
+  --sidebar-primary: oklch(0.77 0.14 220);
   --sidebar-primary-foreground: oklch(0.15 0.01 260);
   --sidebar-accent: oklch(0.26 0.015 260);
   --sidebar-accent-foreground: oklch(0.95 0.005 260);
   --sidebar-border: oklch(0.3 0.015 260);
-  --sidebar-ring: oklch(0.7 0.19 45);
+  --sidebar-ring: oklch(0.77 0.14 220);
   --glow: 0 0 24px -4px color-mix(in oklab, var(--primary) 60%, transparent);
 }
 
@@ -140,4 +140,19 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
+}
+
+/* Tactical display surfaces share the global palette. */
+@utility tactical-surface { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); backdrop-filter: blur(16px); }
+@utility cyber-button { background: color-mix(in oklab, var(--primary) 14%, transparent); color: var(--primary); border: 1px solid color-mix(in oklab, var(--primary) 38%, transparent); }
+@utility heat-low { fill: color-mix(in oklab, var(--primary) 15%, var(--field)); }
+@utility heat-mid { fill: color-mix(in oklab, var(--primary) 35%, var(--field)); }
+@utility heat-high { fill: color-mix(in oklab, var(--primary) 65%, var(--field)); }
+@utility heat-peak { fill: var(--primary); }
+@utility heat-sparse { fill: var(--secondary); }
+@utility metric-band { border-block: 1px solid var(--border); background: color-mix(in oklab, var(--primary) 4%, transparent); }
+.recharts-wrapper:focus, svg:focus { outline: none; }
+button, select, input { touch-action: manipulation; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
