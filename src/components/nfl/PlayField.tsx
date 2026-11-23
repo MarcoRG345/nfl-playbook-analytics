@@ -30,10 +30,12 @@ export function PlayField() {
   const [sc, setSc] = useState<Scenario>("receptor");
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(true);
-  const raf = useRef(0), last = useRef(0);
+  const [speed, setSpeed] = useState(1);
+  const raf = useRef(0), last = useRef(0), speedRef = useRef(1);
+  useEffect(() => { speedRef.current = speed; }, [speed]);
   useEffect(() => {
     const step = (now: number) => {
-      if (last.current) setT((p) => (p + (now - last.current) / 1000) % (DUR + 0.8));
+      if (last.current) setT((p) => (p + ((now - last.current) / 1000) * speedRef.current) % (DUR + 0.8));
       last.current = now; raf.current = requestAnimationFrame(step);
     };
     if (playing) raf.current = requestAnimationFrame(step);
@@ -52,7 +54,7 @@ export function PlayField() {
   const clock = (lim: number) => Math.min(t, lim).toFixed(1);
 
   return (
-    <div className="panel p-4">
+    <div className="tactical-surface p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="font-display text-lg uppercase tracking-wide">Replay táctico · La carrera de los dos relojes</h3>
@@ -64,12 +66,14 @@ export function PlayField() {
               Gana {k}
             </button>
           ))}
+          {[0.5, 1, 2].map((v) => <button key={v} onClick={() => setSpeed(v)} className={`rounded px-2 py-1.5 font-mono text-xs ${speed === v ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{v}×</button>)}
           <button onClick={() => setPlaying((p) => !p)} className="rounded bg-secondary p-1.5" aria-label="Pausa">{playing ? <Pause size={16} /> : <Play size={16} />}</button>
           <button onClick={() => setT(0)} className="rounded bg-secondary p-1.5" aria-label="Reiniciar"><RotateCcw size={16} /></button>
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_200px]">
         <svg viewBox="0 0 600 530" className="mx-auto max-h-[440px] w-full rounded-md bg-field" preserveAspectRatio="xMidYMid meet">
+          <defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" className="fill-primary" /></marker></defs>
           {Array.from({ length: 12 }, (_, i) => <line key={i} x1={i * 50} x2={i * 50} y1={0} y2={530} className="stroke-field-line" strokeWidth={i === 4 ? 3 : 1} />)}
           <line x1={X(20)} x2={X(20)} y1={0} y2={530} className="stroke-chart-4" strokeWidth={2} strokeDasharray="6 4" />
           <line x1={X(26)} x2={X(26)} y1={0} y2={530} className="stroke-chart-4/60" strokeWidth={2} />
@@ -79,6 +83,7 @@ export function PlayField() {
             const d = Math.hypot(x - (dbs[i]![0] ?? 0), y - (dbs[i]![1] ?? 0)); const free = d >= 3;
             return <g key={i}>
               <line x1={X(x)} y1={Y(y)} x2={X(dbs[i]![0])} y2={Y(dbs[i]![1])} className={free ? "stroke-accent" : "stroke-destructive"} strokeWidth={1.5} />
+              {(() => { const [px, py] = at(routes[sc][i]!, Math.max(0, Math.min(t, 3.2) - 0.2)); const dx = x - px, dy = y - py, m = Math.hypot(dx, dy); return m > 0.1 ? <line x1={X(x)} y1={Y(y)} x2={X(x + (dx / m) * Math.min(4, m * 5))} y2={Y(y + (dy / m) * Math.min(4, m * 5))} className="stroke-primary" strokeWidth={2.5} markerEnd="url(#arrow)" /> : null; })()}
               <circle cx={X(x)} cy={Y(y)} r={11} className={free ? "fill-accent" : "fill-chart-5"} />
               <text x={X(x)} y={Y(y) - 16} textAnchor="middle" className="fill-foreground font-mono text-[11px]">{d.toFixed(1)}yd</text>
             </g>;
@@ -101,7 +106,10 @@ export function PlayField() {
           </div>
         </div>
       </div>
-      <input type="range" min={0} max={DUR} step={0.01} value={Math.min(t, DUR)} onChange={(e) => { setPlaying(false); setT(+e.target.value); }} className="mt-3 w-full accent-primary" />
+      <div className="relative mt-3 h-4 text-[9px] uppercase text-muted-foreground">
+        {[["Snap", 0], ["Giro", 1.4], ["Libre", freeT], ["Lanza", throwT], ["Presión", pressT], ["Llega", throwT + 0.8]].filter(([, v]) => (v as number) <= DUR).map(([l, v]) => <span key={l as string} className="absolute -translate-x-1/2 border-l border-primary pl-1" style={{ left: `${((v as number) / DUR) * 100}%` }}>{l}</span>)}
+      </div>
+      <input type="range" min={0} max={DUR} step={0.01} value={Math.min(t, DUR)} onChange={(e) => { setPlaying(false); setT(+e.target.value); }} className="w-full accent-primary" />
     </div>
   );
 }

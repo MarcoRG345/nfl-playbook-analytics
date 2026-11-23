@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { Activity, Crosshair, Radio, Shield, Swords, Timer, TrendingUp, Wind } from "lucide-react";
 import { PlayField } from "@/components/nfl/PlayField";
+import { Funnel, HeatField, HeroMetric, OutcomeBars, RaceCurves, SituationPicker, SlopeChart, TeamQuadrant, TurnByDepth, TurnMatrix } from "@/components/nfl/Tactical";
+import type { Situation } from "@/lib/tactical-data";
 import { LEAGUE, TEAMS, clockDist, convByDown, depthAir, hypotheses, liveFeed, receivers, turnTypes } from "@/lib/nfl-data";
 
 export const Route = createFileRoute("/")({
@@ -26,6 +28,7 @@ const TABS = [
   { id: "p1", label: "P1 · Dos relojes", icon: Timer },
   { id: "p2", label: "P2 · El giro", icon: Crosshair },
   { id: "p3", label: "P3 · Balón en el aire", icon: Wind },
+  { id: "mapas", label: "Mapas de calor", icon: Crosshair },
   { id: "s", label: "Síntesis · Eslabón débil", icon: Shield },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
@@ -34,6 +37,7 @@ function Dashboard() {
   const [tab, setTab] = useState<Tab>("resumen");
   const [side, setSide] = useState<"ofensiva" | "defensiva">("ofensiva");
   const [team, setTeam] = useState("KC");
+  const [situation, setSituation] = useState<Situation>("decisivo");
   return (
     <div className="min-h-screen">
       <LiveTicker />
@@ -70,15 +74,17 @@ function Dashboard() {
             <div className="flex flex-wrap gap-2 md:hidden">
               {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className={`rounded px-2 py-1 text-xs ${tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{t.label.split(" ·")[0]}</button>)}
             </div>
-            <select value={team} onChange={(e) => setTeam(e.target.value)} className="rounded border border-primary bg-card px-3 py-2 font-display uppercase">
+            <select value={team} onChange={(e) => setTeam(e.target.value)} className="rounded-full border border-primary/50 bg-card px-4 backdrop-blur py-2 font-display uppercase">
               {TEAMS.map((t) => <option key={t.team}>{t.team}</option>)}
             </select>
           </header>
+          <div className="mb-5"><SituationPicker value={situation} onChange={setSituation} /></div>
           <div key={tab + side} className="animate-rise">
-            {tab === "resumen" && <Resumen side={side} team={team} />}
-            {tab === "p1" && <P1 side={side} />}
+            {tab === "resumen" && <Resumen side={side} team={team} situation={situation} />}
+            {tab === "p1" && <P1 side={side} situation={situation} team={team} setTeam={setTeam} />}
             {tab === "p2" && <P2 />}
             {tab === "p3" && <P3 />}
+            {tab === "mapas" && <Panel title="Mapas de receptores sobre la cancha" sub="Relativos a la línea de golpeo · clic en una celda"><HeatField situation={situation} team={team} /></Panel>}
             {tab === "s" && <Sintesis team={team} setTeam={setTeam} side={side} />}
           </div>
         </main>
@@ -118,7 +124,7 @@ function Kpi({ label, value, suffix = "", dec = 0, hint, tone = "primary" }: { l
   );
 }
 const Panel = ({ title, sub, children, className = "" }: { title: string; sub?: string; children: React.ReactNode; className?: string }) => (
-  <div className={`panel p-4 ${className}`}>
+  <div className={`tactical-surface p-4 ${className}`}>
     <h3 className="font-display text-base uppercase tracking-wide">{title}</h3>
     {sub && <p className="mb-3 text-xs text-muted-foreground">{sub}</p>}
     {children}
@@ -128,10 +134,11 @@ const Insight = ({ children }: { children: React.ReactNode }) => (
   <div className="flex gap-2 rounded border-l-4 border-primary bg-primary/10 p-3 text-sm"><TrendingUp size={16} className="mt-0.5 shrink-0 text-primary" /><div>{children}</div></div>
 );
 
-function Resumen({ side, team }: { side: string; team: string }) {
+function Resumen({ side, team, situation }: { side: string; team: string; situation: Situation }) {
   const t = TEAMS.find((x) => x.team === team)!;
   return (
     <div className="space-y-5">
+      <HeroMetric situation={situation} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Receptor libre al llegar presión" value={LEAGUE.freeAtPressure * 100} suffix="%" hint="Liga · n=4,832" tone="accent" />
         <Kpi label="Conversión si gana receptor" value={LEAGUE.convWin * 100} suffix="%" hint={`vs ${Math.round(LEAGUE.convLose * 100)}% si gana defensa`} />
@@ -168,30 +175,14 @@ function Resumen({ side, team }: { side: string; team: string }) {
   );
 }
 
-function P1({ side }: { side: string }) {
+function P1({ side, situation, team, setTeam }: { side: string; situation: Situation; team: string; setTeam: (t: string) => void }) {
   return (
     <div className="space-y-5">
-      <Insight>{side === "ofensiva" ? "El receptor se libera en promedio 0.43s antes de que llegue la presión: la ventana existe, hay que verla." : "Tu reloj llega 0.43s tarde en promedio: acelerar la presión es la palanca #1."}</Insight>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Panel title="Distribución de los dos relojes" sub="Densidad de tiempos (s) · liga">
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={clockDist}>
-              <defs>{["accent", "destructive"].map((c) => <linearGradient key={c} id={c} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={`var(--${c})`} stopOpacity={0.6} /><stop offset="1" stopColor={`var(--${c})`} stopOpacity={0} /></linearGradient>)}</defs>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" /><XAxis dataKey="t" {...axis} /><YAxis {...axis} /><Tooltip {...tip} /><Legend />
-              <Area dataKey="receptor" name="Receptor libre" stroke="var(--accent)" fill="url(#accent)" strokeWidth={2} animationDuration={1500} />
-              <Area dataKey="defensa" name="Presión llega" stroke="var(--destructive)" fill="url(#destructive)" strokeWidth={2} animationDuration={1500} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Panel>
-        <Panel title="Conversión según quién gana" sub="% conversión por situación">
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={convByDown}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" /><XAxis dataKey="down" {...axis} /><YAxis {...axis} unit="%" /><Tooltip {...tip} cursor={{ fill: "var(--muted)" }} /><Legend />
-              <Bar dataKey="gano" name="Gana receptor" fill="var(--accent)" radius={[4, 4, 0, 0]} animationDuration={1200} />
-              <Bar dataKey="perdio" name="Gana defensa" fill="var(--destructive)" radius={[4, 4, 0, 0]} animationDuration={1200} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Panel>
+      <Insight>{side === "ofensiva" ? "Antes del cruce de curvas: lectura rápida y primer progreso. Después del cruce: protección extra o chequeo a ruta corta." : "Si tu presión no llega antes del cruce, disfraza la cobertura: el blitz tardío solo regala la ventana."}</Insight>
+      <Panel title="La carrera · dos curvas acumuladas" sub={`Segundos desde el snap · ${situation} · el cruce es el segundo que decide la jugada`}><RaceCurves situation={situation} /></Panel>
+      <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
+        <Panel title="Cuánto vale ganarla" sub="% conversión por resultado · barras = IC90"><OutcomeBars /></Panel>
+        <Panel title="Cuadrante de equipos" sub="Clic en un equipo · líneas = mediana liga · ★ seleccionado"><TeamQuadrant team={team} setTeam={setTeam} /></Panel>
       </div>
       <Panel title="Resultado de la carrera · liga" sub="Clasificación por jugada">
         <div className="flex h-10 overflow-hidden rounded font-display text-sm uppercase">
@@ -219,6 +210,10 @@ function P2() {
             <p className="mt-1 text-[11px] text-muted-foreground">Velocidad conservada {Math.round(t.vel * 100)}%</p>
           </div>
         ))}
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="Separación ganada por tipo de giro" sub="Comparada a igual profundidad · yd 1s post-giro"><TurnByDepth /></Panel>
+        <Panel title="Punto ideal: girar mucho sin frenar" sub="Eje x = ángulo · eje y = velocidad conservada"><TurnMatrix /></Panel>
       </div>
       <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
         <Panel title="Mapa de receptores · Giro vs separación" sub="Tamaño = rutas decisivas · clic para detalle">
@@ -251,6 +246,7 @@ function P3() {
   return (
     <div className="space-y-5">
       <Insight>A partir de 16 yd la ventaja se evapora: se pierden <b>1.2–1.9 yd</b> en vuelo y el % de completos cae bajo 45%.</Insight>
+      <Panel title="Pendiente · ventaja que se pierde en vuelo" sub="Del lanzamiento a la llegada · receptor objetivo"><SlopeChart /></Panel>
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel title="Separación al lanzar vs al llegar" sub="yd promedio por profundidad">
           <ResponsiveContainer width="100%" height={300}>
@@ -324,6 +320,7 @@ function Sintesis({ team, setTeam, side }: { team: string; setTeam: (t: string) 
               <Radar dataKey="v" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.4} animationDuration={900} /></RadarChart>
           </ResponsiveContainer>
         </Panel>
+        <Panel title="Embudo de la jugada decisiva" sub="Rojo = paso donde se rompe"><Funnel teamName={team} /></Panel>
         <Panel title="Cadena" sub="Dónde se rompe la jugada">
           <div className="space-y-2">
             {[["P1 Gana la carrera", t.p1], ["P2 Gana separación", t.p2], ["P3 La conserva en el aire", t.p3]].map(([l, v]) => (
