@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { Activity, Crosshair, Radio, Shield, Swords, Timer, TrendingUp, Wind } from "lucide-react";
 import { PlayField } from "@/components/nfl/PlayField";
-import { Funnel, HeatField, HeroMetric, OutcomeBars, RaceCurves, SituationPicker, SlopeChart, TeamQuadrant, TurnByDepth, TurnMatrix } from "@/components/nfl/Tactical";
-import type { Situation } from "@/lib/tactical-data";
+import { Funnel, HeatField, HeroMetric, AirOutcome, OutcomeBars, RaceCurves, SituationPicker, SlopeChart, TeamQuadrant, TurnByDepth, TurnMatrix } from "@/components/nfl/Tactical";
+import { SITUATIONS, type Situation } from "@/lib/tactical-data";
+import { Button } from "@/components/ui/button";
 import { LEAGUE, TEAMS, clockDist, convByDown, depthAir, hypotheses, liveFeed, receivers, turnTypes } from "@/lib/nfl-data";
 
 export const Route = createFileRoute("/")({
@@ -42,43 +43,47 @@ function Dashboard() {
     <div className="min-h-screen">
       <LiveTicker />
       <div className="flex">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar p-4 md:flex">
+        <aside className="sticky top-0 hidden h-screen w-48 xl:w-60 shrink-0 flex-col border-r border-border bg-sidebar p-4 md:flex">
           <div className="mb-6 flex items-center gap-2">
             <div className="grid h-9 w-9 place-items-center rounded bg-primary font-display font-bold text-primary-foreground">2C</div>
             <div><p className="font-display text-lg uppercase leading-none">Two Clocks</p><p className="text-[10px] uppercase tracking-widest text-muted-foreground">Scout Analytics</p></div>
           </div>
           <div className="mb-5 grid grid-cols-2 rounded bg-secondary p-1 text-xs">
             {(["ofensiva", "defensiva"] as const).map((s) => (
-              <button key={s} onClick={() => setSide(s)} className={`flex items-center justify-center gap-1 rounded py-1.5 uppercase ${side === s ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground"}`}>
+              <Button variant="ghost" size="sm" key={s} onClick={() => setSide(s)} className={`flex items-center justify-center gap-1 rounded py-1.5 uppercase ${side === s ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground"}`}>
                 {s === "ofensiva" ? <Swords size={12} /> : <Shield size={12} />}{s.slice(0, 3)}
-              </button>
+              </Button>
             ))}
           </div>
           <nav className="space-y-1">
             {TABS.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)} className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm ${tab === t.id ? "border-l-2 border-primary bg-sidebar-accent text-foreground" : "text-muted-foreground hover:bg-sidebar-accent/50"}`}>
-                <t.icon size={15} />{t.label}
-              </button>
+              <Button variant="ghost" size="sm" key={t.id} onClick={() => setTab(t.id)} className={`flex h-auto w-full justify-start items-center gap-2 rounded px-3 py-2 text-left text-sm ${tab === t.id ? "border-l-2 border-primary bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary" : "text-muted-foreground hover:bg-sidebar-accent/50"}`}>
+                <t.icon size={15} /><span className="min-w-0 whitespace-normal">{t.label}</span>
+              </Button>
             ))}
           </nav>
           <div className="mt-auto rounded border border-border p-3 text-[11px] text-muted-foreground">
-            <p className="mb-1 font-semibold text-foreground">Filtro activo</p>3er y 4to down · sin "No Play" · n = {LEAGUE.plays.toLocaleString()}
+            <p className="mb-1 font-semibold text-foreground">Muestra de ejemplo</p>Datos e intervalos inventados · sin "No Play"<p className="mt-2">{SITUATIONS[situation].label} · n={SITUATIONS[situation].n.toLocaleString()}</p>
           </div>
         </aside>
         <main className="min-w-0 flex-1 p-4 md:p-6">
           <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-widest text-primary">Temporada 2026 · Semana 11 · Vista {side}</p>
-              <h1 className="font-display text-3xl uppercase md:text-4xl">{TABS.find((t) => t.id === tab)!.label}</h1>
+              <p className="text-xs uppercase tracking-widest text-primary">Two Clocks · Demo 2026 · Vista {side}</p>
+              <h1 className="font-display text-3xl uppercase md:text-4xl">{TABS.find((t) => t.id === tab)?.label}</h1>
             </div>
             <div className="flex flex-wrap gap-2 md:hidden">
-              {TABS.map((t) => <button key={t.id} onClick={() => setTab(t.id)} className={`rounded px-2 py-1 text-xs ${tab === t.id ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>{t.label.split(" ·")[0]}</button>)}
+              {TABS.map((t) => <Button variant="ghost" size="sm" key={t.id} onClick={() => setTab(t.id)} className={`rounded px-2 py-1 text-xs ${tab === t.id ? "bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground" : "bg-secondary"}`}>{t.label.split(" ·")[0]}</Button>)}
             </div>
-            <select value={team} onChange={(e) => setTeam(e.target.value)} className="rounded-full border border-primary/50 bg-card px-4 backdrop-blur py-2 font-display uppercase">
+            <div className="flex gap-1 md:hidden">
+              {(["ofensiva", "defensiva"] as const).map(s => <Button variant="ghost" size="sm" key={s} onClick={() => setSide(s)} aria-pressed={side === s} className={side === s ? "cyber-button" : ""}>{s === "ofensiva" ? <Swords /> : <Shield />}{s}</Button>)}
+            </div>
+            <select aria-label="Equipo" value={team} onChange={(e) => setTeam(e.target.value)} className="rounded-full border border-primary/50 bg-card px-4 backdrop-blur py-2 font-display uppercase">
               {TEAMS.map((t) => <option key={t.team}>{t.team}</option>)}
             </select>
           </header>
-          <div className="mb-5"><SituationPicker value={situation} onChange={setSituation} /></div>
+          <p className="mb-3 text-[11px] text-muted-foreground">Simulación · cifras e intervalos de ejemplo, no resultados oficiales NFL.</p>
+          {(["resumen", "p1", "mapas"] as string[]).includes(tab) && <div className="mb-5"><SituationPicker value={situation} onChange={setSituation} /></div>}
           <div key={tab + side} className="animate-rise">
             {tab === "resumen" && <Resumen side={side} team={team} situation={situation} />}
             {tab === "p1" && <P1 side={side} situation={situation} team={team} setTeam={setTeam} />}
@@ -98,7 +103,7 @@ function LiveTicker() {
   return (
     <div className="flex items-center overflow-hidden border-b border-border bg-card text-xs">
       <div className="z-10 flex shrink-0 items-center gap-2 bg-destructive px-3 py-2 font-display uppercase text-destructive-foreground">
-        <Radio size={13} /><span className="h-2 w-2 rounded-full bg-destructive-foreground animate-live" /> En vivo
+        <Radio size={13} /><span className="h-2 w-2 rounded-full bg-destructive-foreground animate-live" /> Demo en vivo
       </div>
       <div className="flex animate-ticker gap-10 whitespace-nowrap px-4 py-2 font-mono text-muted-foreground">
         {items.map((f, i) => <span key={i}><span className="text-primary">▸</span> {f}</span>)}
@@ -135,26 +140,27 @@ const Insight = ({ children }: { children: React.ReactNode }) => (
 );
 
 function Resumen({ side, team, situation }: { side: string; team: string; situation: Situation }) {
-  const t = TEAMS.find((x) => x.team === team)!;
+  const t = TEAMS.find((x) => x.team === team) ?? TEAMS[0];
+  if (!t) return null;
   return (
     <div className="space-y-5">
       <HeroMetric situation={situation} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Receptor libre al llegar presión" value={LEAGUE.freeAtPressure * 100} suffix="%" hint="Liga · n=4,832" tone="accent" />
-        <Kpi label="Conversión si gana receptor" value={LEAGUE.convWin * 100} suffix="%" hint={`vs ${Math.round(LEAGUE.convLose * 100)}% si gana defensa`} />
-        <Kpi label="Reloj defensa promedio" value={LEAGUE.avgPressureSec} dec={2} suffix="s" hint="Snap → rusher a ≤2 yd" tone="destructive" />
-        <Kpi label={`Conversión ${team}`} value={t.conv * 100} dec={1} suffix="%" hint={`Eslabón débil: ${t.weak}`} />
+        <Kpi label="Liga · receptor libre (3.º/4.º)" value={LEAGUE.freeAtPressure * 100} suffix="%" hint="Liga · n=4,832" tone="accent" />
+        <Kpi label="Liga · conversión (3.º/4.º)" value={LEAGUE.convWin * 100} suffix="%" hint={`vs ${Math.round(LEAGUE.convLose * 100)}% si gana defensa`} />
+        <Kpi label="Reloj defensa promedio" value={LEAGUE.avgPressureSec} dec={2} suffix="s" hint="Liga · n=4,832 · rusher ≤2 yd" tone="destructive" />
+        <Kpi label={`Conversión ${team}`} value={t.conv * 100} dec={1} suffix="%" hint={`n=${t.n} · eslabón débil ${t.weak}`} />
       </div>
       <PlayField />
       <div className="grid gap-5 lg:grid-cols-3">
-        <Panel title="Hipótesis CRISP-DM" sub="Bootstrap 1000 rep · semilla 42" className="lg:col-span-2">
+        <Panel title="Hipótesis CRISP-DM" sub="Resultados e IC90 ilustrativos · no se ha ejecutado bootstrap" className="lg:col-span-2">
           <div className="space-y-2">
             {hypotheses.map((h) => (
-              <div key={h.id} className="flex items-center gap-3 rounded bg-secondary p-3">
+              <div key={h.id} className="flex flex-wrap items-center gap-3 rounded bg-secondary p-3">
                 <span className="rounded bg-primary px-2 py-1 font-display text-primary-foreground">{h.id}</span>
                 <p className="flex-1 text-sm">{h.txt}</p>
                 <div className="text-right"><p className="font-mono text-sm text-accent">{h.val}</p><p className="text-[10px] text-muted-foreground">{h.ci} · n={h.n}</p></div>
-                <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase text-accent">{h.ok ? "Confirmada" : "Rechazada"}</span>
+                <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] uppercase text-accent">{h.ok ? "Ejemplo a favor" : "Ejemplo en contra"}</span>
               </div>
             ))}
           </div>
@@ -178,16 +184,16 @@ function Resumen({ side, team, situation }: { side: string; team: string; situat
 function P1({ side, situation, team, setTeam }: { side: string; situation: Situation; team: string; setTeam: (t: string) => void }) {
   return (
     <div className="space-y-5">
-      <Insight>{side === "ofensiva" ? "Antes del cruce de curvas: lectura rápida y primer progreso. Después del cruce: protección extra o chequeo a ruta corta." : "Si tu presión no llega antes del cruce, disfraza la cobertura: el blitz tardío solo regala la ventana."}</Insight>
-      <Panel title="La carrera · dos curvas acumuladas" sub={`Segundos desde el snap · ${situation} · el cruce es el segundo que decide la jugada`}><RaceCurves situation={situation} /></Panel>
+      <Insight>{side === "ofensiva" ? "El receptor se libera antes en esta muestra: priorizar lectura rápida y rutas que corten antes de 2.2s; confirmar la ventana en el replay." : "La presión se acumula después que las liberaciones: combinar cobertura interior con rush temprano; no confundir la curva de liga con una jugada individual."}</Insight>
+      <Panel title="La carrera · dos curvas acumuladas" sub={`Segundos desde el snap · ${SITUATIONS[situation].label} · n=${SITUATIONS[situation].n} · acumuladas, no densidades`}><RaceCurves situation={situation} /></Panel>
       <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
-        <Panel title="Cuánto vale ganarla" sub="% conversión por resultado · barras = IC90"><OutcomeBars /></Panel>
+        <Panel title="Cuánto vale ganarla" sub="% conversión por resultado · líneas = IC90 ilustrativo"><OutcomeBars situation={situation} /></Panel>
         <Panel title="Cuadrante de equipos" sub="Clic en un equipo · líneas = mediana liga · ★ seleccionado"><TeamQuadrant team={team} setTeam={setTeam} /></Panel>
       </div>
       <Panel title="Resultado de la carrera · liga" sub="Clasificación por jugada">
-        <div className="flex h-10 overflow-hidden rounded font-display text-sm uppercase">
+        <div className="flex min-h-12 overflow-hidden rounded font-display text-[10px] sm:text-sm uppercase">
           {[["Gana receptor", 58, "bg-accent text-accent-foreground"], ["Gana defensa", 27, "bg-destructive text-destructive-foreground"], ["Sin presión", 15, "bg-chart-5 text-foreground"]].map(([l, v, c]) => (
-            <div key={l as string} style={{ width: `${v}%` }} className={`animate-fill flex items-center justify-center ${c}`}>{l} {v}%</div>
+            <div key={l as string} style={{ width: `${v}%` }} className={`animate-fill flex items-center justify-center text-center ${c}`}>{l} {v}%</div>
           ))}
         </div>
         <p className="mt-2 text-xs text-muted-foreground">Del 58% ganado, 11% terminó en sack: receptor libre <b>no visto</b> → problema de lectura del QB.</p>
@@ -231,13 +237,14 @@ function P2() {
         <Panel title="Top separadores" sub="MIN_N_RECEPTOR = 20">
           <div className="space-y-1.5">
             {[...receivers].sort((a, b) => b.sep - a.sep).slice(0, 8).map((r, i) => (
-              <button key={r.name} onClick={() => setSel(r.name)} className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm ${sel === r.name ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
+              <Button variant="ghost" size="sm" key={r.name} onClick={() => setSel(r.name)} className={`flex h-auto w-full justify-start items-center gap-2 rounded px-2 py-1.5 text-left text-sm ${sel === r.name ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}>
                 <span className="w-4 font-mono text-xs opacity-60">{i + 1}</span><span className="flex-1">{r.name}</span><span className="font-mono">{r.sep}yd</span><span className="w-10 text-right font-mono text-xs opacity-70">{r.giro}°</span>
-              </button>
+              </Button>
             ))}
           </div>
         </Panel>
       </div>
+      {sel && <Insight>{sel} · {receivers.find(r => r.name === sel)?.giro}° · +{receivers.find(r => r.name === sel)?.sep} yd · n={receivers.find(r => r.name === sel)?.n} · velocidad conservada {Math.round((receivers.find(r => r.name === sel)?.vel ?? 0) * 100)}%</Insight>}
     </div>
   );
 }
@@ -267,6 +274,7 @@ function P3() {
           </ResponsiveContainer>
         </Panel>
       </div>
+      <Panel title="¿Perder la ventaja cuesta completos?" sub="Comparación por profundidad · porcentajes e intervalos inventados"><AirOutcome /></Panel>
       <Panel title="Trayectoria animada del balón" sub="Más vuelo = más tiempo para que la defensa cierre">
         <svg viewBox="0 0 800 160" className="w-full">
           {depthAir.map((d, i) => {
@@ -286,7 +294,8 @@ function P3() {
 function Sintesis({ team, setTeam, side }: { team: string; setTeam: (t: string) => void; side: string }) {
   const [sort, setSort] = useState<"conv" | "p1" | "p2" | "p3">("conv");
   const rows = useMemo(() => [...TEAMS].sort((a, b) => b[sort] - a[sort]), [sort]);
-  const t = TEAMS.find((x) => x.team === team)!;
+  const t = TEAMS.find((x) => x.team === team) ?? TEAMS[0];
+  if (!t) return null;
   const radar = [{ k: "P1 Carrera", v: t.p1 * 100 }, { k: "P2 Giro", v: t.p2 * 100 }, { k: "P3 Aire", v: t.p3 * 100 }, { k: "Conversión", v: t.conv * 150 }, { k: "EPA", v: (t.epa + 0.5) * 100 }];
   const pct = (v: number) => `${Math.round(v * 100)}%`;
   const heat = (v: number) => v > 0.68 ? "bg-accent/70 text-accent-foreground" : v > 0.55 ? "bg-chart-4/50" : "bg-destructive/60";

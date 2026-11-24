@@ -7,7 +7,7 @@ export const TEAMS = ["KC","BUF","PHI","SF","DAL","BAL","MIA","DET","CIN","GB","
   const p1 = r(0.42, 0.78), p2 = r(0.45, 0.8), p3 = r(0.5, 0.85);
   const links = { P1: p1, P2: p2, P3: p3 };
   const weak = (Object.entries(links).sort((a, b) => a[1] - b[1])[0]?.[0] ?? "P1") as "P1"|"P2"|"P3";
-  return { team: t, n: Math.round(r(38, 92)), p1, p2, p3, conv: p1 * p2 * p3 * r(0.9, 1.25), weak, epa: r(-0.35, 0.45) };
+  return { team: t, n: Math.round(r(38, 92)), p1, p2, p3, conv: p1 * p2 * p3 * r(0.75, 0.98), weak, epa: r(-0.35, 0.45) };
 });
 
 export const LEAGUE = {

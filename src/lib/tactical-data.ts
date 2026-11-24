@@ -32,9 +32,9 @@ export const airSamples = [1140, 986, 824, 572, 310];
 export function heatCells(layer: number, teamIndex: number, situation: Situation) {
   return Array.from({ length: 48 }, (_, i) => {
     const col = i % 8, row = Math.floor(i / 8);
-    const n = 9 + ((i * 37 + teamIndex * 11 + layer * 17) % 109);
+    const n = 9 + ((i * 37 + teamIndex * 11 + layer * 17 + SITUATIONS[situation].shift * 7 + 100) % 109);
     const center = Math.max(0, 1 - Math.abs(row - 2.5) / 3);
-    const value = layer === 0 ? 28 + center * 22 + Math.sin(col * .7 + teamIndex) * 15 + SITUATIONS[situation].shift : layer === 1 ? .25 + center * .7 + Math.sin(col + teamIndex) * .2 + (col > 1 && col < 5 ? .55 : .1) : .15 + col * .23 + center * .3;
+    const value = layer === 0 ? 28 + center * 22 + Math.sin(col * .7 + teamIndex) * 15 + SITUATIONS[situation].shift : layer === 1 ? .25 + center * .7 + SITUATIONS[situation].shift * .012 + Math.sin(col + teamIndex) * .2 + (col > 1 && col < 5 ? .55 : .1) : .15 + col * .23 + center * .3 + SITUATIONS[situation].shift * .008;
     return { col, row, n, value: +value.toFixed(2) };
   });
 }
